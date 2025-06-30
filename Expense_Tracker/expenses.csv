@@ -1,0 +1,10 @@
+id,category,amount,description,date,username
+1,Food & Dining,122.0,Test_add,2025-06-30,pmtest
+2,Healthcare,20.0,Urgent Care for Cold and Cough.,2025-06-18,pmtest
+3,Food & Dining,13.01,Starbucks,2025-06-30,pmtest
+4,Shopping,12.0,Starbucks,2025-06-30,pmtest
+5,Entertainment,12.0,Starbucks,2025-06-30,pmtest
+6,Bills & Utilities,12.0,Starbucks,2025-06-30,pmtest
+7,Healthcare,12.0,Starbucks,2025-06-30,pmtest
+8,Travel,12.0,Starbucks,2025-06-30,pmtest
+9,Education,20.0,,2025-06-25,pmtest

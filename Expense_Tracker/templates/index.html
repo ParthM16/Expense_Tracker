@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>💰 Expense Tracker</h1>
+
+            <div class="user-info">
+                <div class="username">👤 {{ current_user }}</div>
+                <a href="{{ url_for('logout') }}" class="logout-btn" onclick="return confirm('Are you sure you want to logout?')">Logout</a>
+            </div>
+
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('add') }}" class="{{ 'active' if active_tab == 'add' else '' }}">➕ Add Expense</a></li>
+                    <li><a href="{{ url_for('view') }}" class="{{ 'active' if active_tab == 'view' else '' }}">👁️ View Expenses</a></li>
+                    <li><a href="{{ url_for('analysis') }}" class="{{ 'active' if active_tab == 'analysis' else '' }}">📊 Analysis</a></li>
+                </ul>
+            </nav>
+        </div>
+
+        <div class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if active_tab == 'add' %}
+            <div class="welcome-message">
+                <h2>Welcome back, {{ current_user }}!</h2>
+                <p>Ready to track your expenses? Add a new expense below.</p>
+            </div>
+
+            <h2 class="page-title">Add New Expense</h2>
+            <form method="POST" action="{{ url_for('add') }}">
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="add_category" name="category" required>
+                        <option value="">Select Category</option>
+                        <option value="Food & Dining">Food & Dining</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Bills & Utilities">Bills & Utilities</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Education">Education</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="amount">Amount ($)</label>
+                        <input type="number" id="add_amount" name="amount" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="add_date" name="date">
+                        <small style="color: #7f8c8d; font-size: 12px; margin-top: 5px;">Leave blank to use today's date</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description (Optional - Max 100 characters)</label>
+                    <textarea id="add_description" name="description" rows="3" maxlength="100" placeholder="Add a description..."></textarea>
+                    <small class="char-counter">0/100 characters</small>
+                </div>
+                <button type="submit" class="btn">Add Expense</button>
+            </form>
+            {% endif %}
+
+            {% if active_tab == 'view' %}
+            <h2 class="page-title">My Expenses</h2>
+            {% if expenses %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses %}
+                    <tr>
+                        <td>
+                            <div>{{ expense.date }}</div>
+                        </td>
+                        <td>{{ expense.category }}</td>
+                        <td>${{ "%.2f"|format(expense.amount) }}</td>
+                        <td>{{ expense.description or '-' }}</td>
+                        <td class="actions">
+                            <a href="{{ url_for('edit', expense_id=expense.id) }}" class="btn btn-warning">Edit</a>
+                            <a href="{{ url_for('delete', expense_id=expense.id) }}"
+                               class="btn btn-danger"
+                               onclick="return confirm('Are you sure you want to delete this expense?')">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-data">
+                <p>No expenses found. <a href="{{ url_for('add') }}">Add your first expense</a></p>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            {% if active_tab == 'edit' and expense %}
+            <h2 class="page-title">Edit Expense</h2>
+            <form method="POST" action="{{ url_for('update', expense_id=expense.id) }}">
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category" required>
+                        <option value="Food & Dining" {{ 'selected' if expense.category == 'Food & Dining' else '' }}> Food & Dining</option>
+                        <option value="Transportation" {{ 'selected' if expense.category == 'Transportation' else '' }}>Transportation</option>
+                        <option value="Shopping" {{ 'selected' if expense.category == 'Shopping' else '' }}>Shopping</option>
+                        <option value="Entertainment" {{ 'selected' if expense.category == 'Entertainment' else '' }}>Entertainment</option>
+                        <option value="Bills & Utilities" {{ 'selected' if expense.category == 'Bills & Utilities' else '' }}>Bills & Utilities</option>
+                        <option value="Healthcare" {{ 'selected' if expense.category == 'Healthcare' else '' }}>Healthcare</option>
+                        <option value="Education" {{ 'selected' if expense.category == 'Education' else '' }}>Education</option>
+                        <option value="Travel" {{ 'selected' if expense.category == 'Travel' else '' }}>Travel</option>
+                        <option value="Other" {{ 'selected' if expense.category == 'Other' else '' }}>Other</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="amount">Amount ($)</label>
+                        <input type="number" id="amount" name="amount" step="0.01" min="0" value="{{ expense.amount }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" name="date" value="{{ expense.date }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description (Optional - Max 100 characters)</label>
+                    <textarea id="description" name="description" rows="3" maxlength="100">{{ expense.description }}</textarea>
+                    <small class="char-counter">{{ expense.description|length if expense.description else 0 }}/100 characters</small>
+                </div>
+                <div class="actions">
+                    <button type="submit" class="btn">Update Expense</button>
+                    <a href="{{ url_for('view') }}" class="btn btn-danger">Cancel</a>
+                </div>
+            </form>
+            {% endif %}
+
+            {% if active_tab == 'analysis' %}
+            <h2 class="page-title">My Expense Analysis</h2>
+            <p style="color: #7f8c8d; margin-bottom: 20px; font-style: italic;">
+                Analysis based on all your expense data across all dates
+            </p>
+
+            {% if analysis.total_expense > 0 %}
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>💰 Total Expenses (All Time)</h3>
+                    <div class="stat-value">${{ "%.2f"|format(analysis.total_expense) }}</div>
+                    <small style="color: #7f8c8d;">Sum of all expenses across all dates</small>
+                </div>
+
+                {% if analysis.all_categories_same %}
+                <div class="stat-card">
+                    <h3>📊 All Categories Equal</h3>
+                    <div class="stat-value">All Same</div>
+                    <div>${{ "%.2f"|format(analysis.same_amount) }} each (All Time)</div>
+                </div>
+                {% else %}
+                    {% if analysis.highest_category %}
+                    <div class="stat-card">
+                        <h3>📈 Highest Spending Category (All Time)</h3>
+                        {% if analysis.highest_category.is_multiple %}
+                            <div class="stat-value">Multiple Categories</div>
+                            <div style="font-size: 14px; margin-top: 5px;">
+                                {% for category in analysis.highest_category.categories %}
+                                    <div>{{ category }}</div>
+                                {% endfor %}
+                            </div>
+                            <div>${{ "%.2f"|format(analysis.highest_category.amount) }} each</div>
+                        {% else %}
+                            <div class="stat-value">{{ analysis.highest_category.categories[0] }}</div>
+                            <div>${{ "%.2f"|format(analysis.highest_category.amount) }}</div>
+                        {% endif %}
+                        <small style="color: #7f8c8d;">Total across all dates</small>
+                    </div>
+                    {% endif %}
+
+                    {% if analysis.lowest_category %}
+                    <div class="stat-card">
+                        <h3>📉 Lowest Spending Category (All Time)</h3>
+                        {% if analysis.lowest_category.is_multiple %}
+                            <div class="stat-value">Multiple Categories</div>
+                            <div style="font-size: 14px; margin-top: 5px;">
+                                {% for category in analysis.lowest_category.categories %}
+                                    <div>{{ category }}</div>
+                                {% endfor %}
+                            </div>
+                            <div>${{ "%.2f"|format(analysis.lowest_category.amount) }} each</div>
+                        {% else %}
+                            <div class="stat-value">{{ analysis.lowest_category.categories[0] }}</div>
+                            <div>${{ "%.2f"|format(analysis.lowest_category.amount) }}</div>
+                        {% endif %}
+                        <small style="color: #7f8c8d;">Total across all dates</small>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div class="analysis-section">
+                <div class="category-list">
+                    <h3>💳 My Spending by Category (All Time)</h3>
+                    <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 15px;">
+                        Total spending per category across all dates
+                    </p>
+                    {% for category, amount in sorted_category_totals  %}
+                    <div class="category-item">
+                        <span>{{ category }}</span>
+                        <span><strong>${{ "%.2f"|format(amount) }}</strong></span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="chart-container">
+                    <h3>📊 Spending Distribution (All Time)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="margin: 40px 0; border: 0; border-top: 1px solid #eee;">
+
+            <h2 class="page-title">Expense Trend Analysis (Past 30 Days)</h2>
+            <p style="color: #7f8c8d; margin-bottom: 20px; font-style: italic;">
+                View daily expense trends for a selected date range and category.
+            </p>
+            <div class="trend-controls">
+                <div class="form-group">
+                    <label for="trend_start_date">Start Date</label>
+                    <input type="date" id="trend_start_date" name="trend_start_date" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="trend_end_date">End Date</label>
+                    <input type="date" id="trend_end_date" name="trend_end_date" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="trend_category_filter">Category</label>
+                    <select id="trend_category_filter" name="trend_category_filter" class="form-control">
+                        {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="button" class="btn" id="showTrendBtn">Show Trend</button>
+            </div>
+
+            <div class="chart-container">
+                <h3>📈 Daily Spending Trend</h3>
+                <div class="chart-wrapper">
+                    <canvas id="trendChart"></canvas>
+                </div>
+                <div id="trendNoData" class="no-data hidden">
+                    <p>No expense data for the selected date range and/or category.</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h3>Daily Expenses in Detail</h3>
+                <table class="table" id="dailyExpensesTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+                <div id="dailyExpensesNoData" class="no-data hidden">
+                    <p>No detailed expenses for the selected criteria.</p>
+                </div>
+            </div>
+
+
+
+            {% else %}
+            <div class="no-data">
+                <p>No expense data available for analysis. <a href="{{ url_for('add') }}">Add some expenses</a> to see insights!</p>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default for add expense form
+            const addDateInput = document.getElementById('add_date');
+            if (addDateInput && !addDateInput.value) {
+                const today = new Date();
+                const formattedDate = today.getFullYear() + '-' +
+                    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(today.getDate()).padStart(2, '0');
+                addDateInput.value = formattedDate;
+            }
+
+            // Set default dates for trend analysis (last 30 days)
+            const trendStartDateInput = document.getElementById('trend_start_date');
+            const trendEndDateInput = document.getElementById('trend_end_date');
+
+            // Set min/max and interdependent behavior for trend date inputs
+            if (trendStartDateInput && trendEndDateInput) {
+                const today = new Date();
+                const formatAsYYYYMMDD = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+
+                const todayStr = formatAsYYYYMMDD(today);
+
+                trendStartDateInput.setAttribute("max", todayStr);
+                trendEndDateInput.setAttribute("max", todayStr);
+                trendEndDateInput.disabled = true;
+
+                // When start date is selected
+                trendStartDateInput.addEventListener("change", () => {
+                    const startDate = new Date(trendStartDateInput.value);
+                    if (trendStartDateInput.value) {
+                        const maxEndDate = new Date(startDate);
+                        maxEndDate.setDate(startDate.getDate() + 30); // ← Corrected: allows 30-day window
+                        const limitedEndDate = maxEndDate > today ? today : maxEndDate;
+
+                        trendEndDateInput.setAttribute("min", trendStartDateInput.value);
+                        trendEndDateInput.setAttribute("max", formatAsYYYYMMDD(limitedEndDate));
+                        trendEndDateInput.disabled = false;
+                    } else {
+                        trendEndDateInput.disabled = true;
+                    }
+
+                    trendEndDateInput.value = "";
+                });
+
+
+                // Auto-fill start = today - 29, end = today on load
+                const autoStart = new Date(today);
+                autoStart.setDate(today.getDate() - 29);
+                trendStartDateInput.value = formatAsYYYYMMDD(autoStart);
+                trendStartDateInput.dispatchEvent(new Event('change'));
+                trendEndDateInput.value = todayStr;
+            }
+
+
+            // Focus on first input when page loads
+            const firstInput = document.querySelector('input, select, textarea');
+            if (firstInput) {
+                firstInput.focus();
+            }
+
+            // Character counter for description fields
+            const descriptionFields = document.querySelectorAll('textarea[name="description"]');
+
+            descriptionFields.forEach(function(textarea) {
+                const counter = textarea.parentNode.querySelector('.char-counter');
+
+                if (counter) {
+                    // Update counter on input
+                    textarea.addEventListener('input', function() {
+                        const currentLength = this.value.length;
+                        const maxLength = 100;
+
+                        counter.textContent = currentLength + '/' + maxLength + ' characters';
+
+                        // Change color based on character count
+                        counter.classList.remove('warning', 'danger');
+                        if (currentLength >= 90) {
+                            counter.classList.add('danger');
+                        } else if (currentLength >= 75) {
+                            counter.classList.add('warning');
+                        }
+                    });
+                     // Initial update for edit page
+                    textarea.dispatchEvent(new Event('input'));
+                }
+            });
+
+            // Initialize pie chart for analysis page
+            {% if active_tab == 'analysis' and analysis.total_expense > 0 %}
+            const ctx = document.getElementById('expenseChart');
+            let expenseChart; // Declare chart globally to destroy and recreate if needed
+
+            if (ctx) {
+                const categoryData = {{ analysis.category_totals | tojson }};
+                const labels = Object.keys(categoryData);
+                const data = Object.values(categoryData);
+
+                // Generate colors for each category
+                const colors = [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0'
+                ];
+
+                expenseChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors.slice(0, labels.length),
+                            borderColor: colors.slice(0, labels.length),
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 20,
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        if (data.labels.length && data.datasets.length) {
+                                            const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                            return data.labels.map((label, i) => {
+                                                const value = data.datasets[0].data[i];
+                                                const percentage = ((value / total) * 100).toFixed(1);
+                                                return {
+                                                    text: `${label}: $${value.toFixed(2)} (${percentage}%)`,
+                                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                                    strokeStyle: data.datasets[0].borderColor[i],
+                                                    lineWidth: data.datasets[0].borderWidth,
+                                                    hidden: isNaN(data.datasets[0].data[i]) || data.datasets[0].data[i] === 0,
+                                                    index: i
+                                                };
+                                            });
+                                        }
+                                        return [];
+                                    }
+                                },
+                                    onClick: null
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Trend Analysis Chart
+            const trendCtx = document.getElementById('trendChart');
+            const showTrendBtn = document.getElementById('showTrendBtn');
+            const trendNoData = document.getElementById('trendNoData');
+            const dailyExpensesTableBody = document.querySelector('#dailyExpensesTable tbody');
+            const dailyExpensesNoData = document.getElementById('dailyExpensesNoData');
+
+            if (trendCtx && showTrendBtn && trendNoData && dailyExpensesTableBody && dailyExpensesNoData) {
+                let trendChart;
+
+                const fetchTrendData = async () => {
+                    const startDate = trendStartDateInput.value;
+                    const endDate = trendEndDateInput.value;
+                    const category = trend_category_filter.value;
+
+                    if (!startDate || !endDate) {
+                        alert('Please select both start and end dates.');
+                        return;
+                    }
+
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    const today = new Date();
+
+                    const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+                    if (end > today) {
+                        alert('End date cannot be in the future.');
+                        return;
+                    }
+
+                    if (diffDays > 29) {
+                        alert('Please select a date range of maximum 30 days.');
+                        return;
+                    }
+
+                    if (start > end) {
+                        alert('Start date cannot be after end date.');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/trend_analysis?start_date=${startDate}&end_date=${endDate}&category=${category}`);
+                        const data = await response.json();
+                        console.log("TREND DATA:", data);
+
+                        if (trendChart) {
+                            trendChart.destroy();
+                        }
+
+                        if (data.labels && data.labels.length > 0) {
+                            trendNoData.classList.add('hidden');
+                            trendCtx.classList.remove('hidden');
+
+                            trendChart = new Chart(trendCtx, {
+                                type: 'line',
+                                data: {
+                                    labels: data.labels,
+                                    datasets: [{
+                                        label: 'Daily Spending ($)',
+                                        data: data.data,
+                                        borderColor: '#3498db',
+                                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                                        fill: true,
+                                        tension: 0.1
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { position: 'top' },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    return `${context.dataset.label}: $${context.parsed.y.toFixed(2)}`;
+                                                }
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: { title: { display: true, text: 'Date' } },
+                                        y: { title: { display: true, text: 'Amount ($)' }, beginAtZero: true }
+                                    }
+                                }
+                            });
+                        } else {
+                            trendNoData.classList.remove('hidden');
+                            trendCtx.classList.add('hidden');
+                        }
+
+                        dailyExpensesTableBody.innerHTML = '';
+                        if (data.filtered_expenses && data.filtered_expenses.length > 0) {
+                            dailyExpensesNoData.classList.add('hidden');
+                            data.filtered_expenses.forEach(expense => {
+                                const row = dailyExpensesTableBody.insertRow();
+                                row.insertCell().textContent = expense.date;
+                                row.insertCell().textContent = expense.category;
+                                row.insertCell().textContent = `$${expense.amount.toFixed(2)}`;
+                                row.insertCell().textContent = expense.description || '-';
+                            });
+                        } else {
+                            dailyExpensesNoData.classList.remove('hidden');
+                        }
+
+                    } catch (error) {
+                        console.error('Error fetching trend data:', error);
+                        alert('Failed to load trend data.');
+                    }
+                };
+
+                showTrendBtn.addEventListener('click', fetchTrendData);
+
+                // Auto-load on analysis tab
+                fetchTrendData();
+            }
+
+
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

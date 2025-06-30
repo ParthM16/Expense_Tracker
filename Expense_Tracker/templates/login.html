@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if show_register %}Register{% else %}Login{% endif %} - Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>💰 Expense Tracker</h1>
+            <p class="subtitle">Manage your expenses with ease</p>
+        </div>
+
+        <div class="login-form">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" data-alert-type="{{ category }}" data-alert-message="{{ message }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Form Tabs -->
+            <div class="form-tabs">
+                <div class="form-tab {% if not show_register %}active{% endif %}" onclick="showLogin()">
+                    Login
+                </div>
+                <div class="form-tab {% if show_register %}active{% endif %}" onclick="showRegister()">
+                    Register
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <div class="form-content {% if not show_register %}active{% endif %}" id="login-form">
+                <form method="POST" action="{{ url_for('login') }}" autocomplete="off">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" autocomplete="new-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="password-container">
+                            <input type="password" id="password" name="password" class="password-input" autocomplete="new-password" required>
+                            <button type="button" class="password-toggle" id="loginPasswordToggle">
+                                <img src="https://cdn-icons-png.flaticon.com/512/159/159604.png" alt="Show password">
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Login</button>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div class="form-content {% if show_register %}active{% endif %}" id="register-form">
+                <form method="POST" action="{{ url_for('register') }}" id="registration-form" autocomplete="off">
+                    <div class="form-group">
+                        <label for="reg-username">Username</label>
+                        <input type="text" id="reg-username" name="username" autocomplete="off" required>
+                        <div class="username-criteria">
+                            <strong>Username Requirements:</strong> Minimum 6 characters, alphanumeric only (a-z, A-Z, 0-9)
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-password">Password</label>
+                        <div class="password-container">
+                            <input type="password" id="reg-password" name="password" class="password-input" autocomplete="new-password" required>
+                            <button type="button" class="password-toggle" id="regPasswordToggle">
+                                <img src="https://cdn-icons-png.flaticon.com/512/159/159604.png" alt="Show password">
+                            </button>
+                        </div>
+                        <div class="password-strength">
+                            <div class="password-strength-bar" id="strength-bar"></div>
+                        </div>
+                        <div class="password-criteria">
+                            <h4>Password Requirements:</h4>
+                            <ul class="criteria-list">
+                                <li id="length-check">At least 8 characters long</li>
+                                <li id="uppercase-check">At least one uppercase letter (A-Z)</li>
+                                <li id="number-check">At least one number (0-9)</li>
+                                <li id="special-check">At least one special character (@$!%*?&)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm-password">Confirm Password</label>
+                        <div class="password-container">
+                            <input type="password" id="confirm-password" name="confirm_password" class="password-input" autocomplete="new-password" required>
+                            <button type="button" class="password-toggle" id="confirmPasswordToggle">
+                                <img src="https://cdn-icons-png.flaticon.com/512/159/159604.png" alt="Show password">
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Create Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showLogin() {
+            document.getElementById('login-form').classList.add('active');
+            document.getElementById('register-form').classList.remove('active');
+            document.querySelectorAll('.form-tab')[0].classList.add('active');
+            document.querySelectorAll('.form-tab')[1].classList.remove('active');
+
+            // Clear login form when switching to prevent autofill
+            setTimeout(() => clearLoginForm(), 100);
+        }
+
+        function showRegister() {
+            document.getElementById('register-form').classList.add('active');
+            document.getElementById('login-form').classList.remove('active');
+            document.querySelectorAll('.form-tab')[1].classList.add('active');
+            document.querySelectorAll('.form-tab')[0].classList.remove('active');
+
+            // Clear registration form when switching
+            setTimeout(() => clearRegistrationForm(), 100);
+        }
+
+        // Enhanced form clearing with autocomplete prevention
+        function clearRegistrationForm() {
+            const form = document.getElementById('registration-form');
+            const inputs = form.querySelectorAll('input');
+
+            // Clear all input values
+            inputs.forEach(input => {
+                input.value = '';
+                input.removeAttribute('value');
+            });
+
+            // Reset validation styles
+            document.getElementById('reg-username').style.borderColor = '#ddd';
+            document.getElementById('reg-password').style.borderColor = '#ddd';
+            document.getElementById('confirm-password').style.borderColor = '#ddd';
+
+            // Reset password strength indicators
+            const strengthBar = document.getElementById('strength-bar');
+            if (strengthBar) {
+                strengthBar.className = 'password-strength-bar';
+                strengthBar.style.width = '0%';
+            }
+
+            // Reset password criteria
+            const criteriaItems = document.querySelectorAll('.criteria-list li');
+            criteriaItems.forEach(item => {
+                item.classList.remove('valid', 'invalid');
+            });
+
+            // Force form reset to prevent browser autofill
+            form.reset();
+
+            // Additional prevention of autofill by temporarily changing input names
+            setTimeout(() => {
+                inputs.forEach(input => {
+                    const tempName = input.name + '_temp';
+                    input.name = tempName;
+                    setTimeout(() => {
+                        input.name = input.name.replace('_temp', '');
+                    }, 100);
+                });
+            }, 100);
+        }
+
+        // Clear login form as well
+        function clearLoginForm() {
+            const form = document.querySelector('#login-form form');
+            const inputs = form.querySelectorAll('input');
+
+            inputs.forEach(input => {
+                input.value = '';
+                input.removeAttribute('value');
+            });
+
+            form.reset();
+        }
+
+        // Check for successful registration and clear form
+        function checkForSuccessAndClear() {
+            const successAlerts = document.querySelectorAll('.alert-success');
+
+            successAlerts.forEach(alert => {
+                const message = alert.getAttribute('data-alert-message') || alert.textContent;
+
+                // Check for registration success messages
+                if (message.toLowerCase().includes('registration successful') ||
+                    message.toLowerCase().includes('account created') ||
+                    message.toLowerCase().includes('successfully registered')) {
+
+                    // Clear both forms to prevent autofill
+                    clearRegistrationForm();
+                    clearLoginForm();
+
+                    // Show login form after successful registration
+                    showLogin();
+
+                    // Additional delay to ensure autofill is prevented
+                    setTimeout(() => {
+                        clearLoginForm();
+                        clearRegistrationForm();
+                    }, 500);
+                }
+            });
+        }
+
+        // Password toggle functionality
+        function setupPasswordToggle(inputId, toggleId) {
+            const passwordInput = document.getElementById(inputId);
+            const toggleButton = document.getElementById(toggleId);
+
+            if (passwordInput && toggleButton) {
+                toggleButton.addEventListener('click', function() {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+
+                    // Change eye icon
+                    const img = toggleButton.querySelector('img');
+                    if (type === 'password') {
+                        img.src = 'https://cdn-icons-png.flaticon.com/512/159/159604.png'; // Show icon
+                        img.alt = 'Show password';
+                    } else {
+                        img.src = 'https://cdn-icons-png.flaticon.com/512/565/565655.png'; // Hide icon
+                        img.alt = 'Hide password';
+                    }
+                });
+            }
+        }
+
+        // Password validation and strength meter
+        document.addEventListener('DOMContentLoaded', function() {
+            // Prevent autofill on page load
+            setTimeout(() => {
+                clearLoginForm();
+                clearRegistrationForm();
+            }, 100);
+
+            // Additional autofill prevention
+            const allInputs = document.querySelectorAll('input');
+            allInputs.forEach(input => {
+                // Prevent autofill
+                input.setAttribute('autocomplete', 'off');
+                input.setAttribute('data-lpignore', 'true');
+                input.setAttribute('data-form-type', 'other');
+
+                // Clear on focus to prevent any lingering autofill
+                input.addEventListener('focus', function() {
+                    if (this.hasAttribute('data-auto-filled')) {
+                        this.value = '';
+                        this.removeAttribute('data-auto-filled');
+                    }
+                });
+            });
+
+            // Check for success message and clear form if account was created successfully
+            checkForSuccessAndClear();
+
+            // Setup password toggles
+            setupPasswordToggle('password', 'loginPasswordToggle');
+            setupPasswordToggle('reg-password', 'regPasswordToggle');
+            setupPasswordToggle('confirm-password', 'confirmPasswordToggle');
+
+            const passwordInput = document.getElementById('reg-password');
+            const confirmPasswordInput = document.getElementById('confirm-password');
+            const strengthBar = document.getElementById('strength-bar');
+
+            const lengthCheck = document.getElementById('length-check');
+            const uppercaseCheck = document.getElementById('uppercase-check');
+            const numberCheck = document.getElementById('number-check');
+            const specialCheck = document.getElementById('special-check');
+
+            if (passwordInput) {
+                passwordInput.addEventListener('input', function() {
+                    const password = this.value;
+                    let score = 0;
+
+                    // Check length
+                    if (password.length >= 8) {
+                        lengthCheck.classList.add('valid');
+                        lengthCheck.classList.remove('invalid');
+                        score++;
+                    } else {
+                        lengthCheck.classList.add('invalid');
+                        lengthCheck.classList.remove('valid');
+                    }
+
+                    // Check uppercase
+                    if (/[A-Z]/.test(password)) {
+                        uppercaseCheck.classList.add('valid');
+                        uppercaseCheck.classList.remove('invalid');
+                        score++;
+                    } else {
+                        uppercaseCheck.classList.add('invalid');
+                        uppercaseCheck.classList.remove('valid');
+                    }
+
+                    // Check number
+                    if (/\d/.test(password)) {
+                        numberCheck.classList.add('valid');
+                        numberCheck.classList.remove('invalid');
+                        score++;
+                    } else {
+                        numberCheck.classList.add('invalid');
+                        numberCheck.classList.remove('valid');
+                    }
+
+                    // Check special character
+                    if (/[@$!%*?&]/.test(password)) {
+                        specialCheck.classList.add('valid');
+                        specialCheck.classList.remove('invalid');
+                        score++;
+                    } else {
+                        specialCheck.classList.add('invalid');
+                        specialCheck.classList.remove('valid');
+                    }
+
+                    // Update strength bar
+                    strengthBar.className = 'password-strength-bar';
+                    if (score === 0) {
+                        strengthBar.style.width = '0%';
+                    } else if (score === 1) {
+                        strengthBar.classList.add('strength-weak');
+                    } else if (score === 2) {
+                        strengthBar.classList.add('strength-fair');
+                    } else if (score === 3) {
+                        strengthBar.classList.add('strength-good');
+                    } else if (score === 4) {
+                        strengthBar.classList.add('strength-strong');
+                    }
+                });
+            }
+
+            // Username validation
+            const usernameInput = document.getElementById('reg-username');
+            if (usernameInput) {
+                usernameInput.addEventListener('input', function() {
+                    const username = this.value;
+                    const isValid = /^[a-zA-Z0-9]{6,}$/.test(username);
+
+                    if (isValid) {
+                        this.style.borderColor = '#28a745';
+                    } else if (username.length > 0) {
+                        this.style.borderColor = '#dc3545';
+                    } else {
+                        this.style.borderColor = '#ddd';
+                    }
+                });
+            }
+
+            // Confirm password validation
+            if (confirmPasswordInput) {
+                confirmPasswordInput.addEventListener('input', function() {
+                    const password = passwordInput.value;
+                    const confirmPassword = this.value;
+
+                    if (confirmPassword === password && confirmPassword.length > 0) {
+                        this.style.borderColor = '#28a745';
+                    } else if (confirmPassword.length > 0) {
+                        this.style.borderColor = '#dc3545';
+                    } else {
+                        this.style.borderColor = '#ddd';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

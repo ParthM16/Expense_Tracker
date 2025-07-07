@@ -396,6 +396,7 @@ def get_trend_analysis_data(start_date_str, end_date_str, category_filter):
                 daily_totals[expense_date.strftime('%Y-%m-%d')] += expense['amount']
                 filtered_expenses.append(expense)
 
+
     # Generate labels (dates) for the chart
     delta = end_date - start_date
     dates = []
@@ -415,52 +416,7 @@ def get_trend_analysis_data(start_date_str, end_date_str, category_filter):
         'filtered_expenses': filtered_expenses
     }
 
-from datetime import timedelta # Add this import at the top of app.py
 
-def get_trend_data(start_date_str, end_date_str, category_filter=None):
-    """
-    Get daily expense trend data for the current user within a specified date range
-    and optional category filter.
-    """
-    expenses = read_expenses()
-    daily_expenses = defaultdict(float)
-    filtered_expenses_list = []
-
-    try:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    except ValueError:
-        return {}, [] # Return empty if dates are invalid
-
-    # Ensure end_date is not before start_date
-    if start_date > end_date:
-        start_date, end_date = end_date, start_date
-
-    # Max 30-day range validation
-    if (end_date - start_date).days > 29: # 29 days difference means 30 days total
-        return {}, [] # Return empty if range exceeds 30 days
-
-
-    current_date = start_date
-    while current_date <= end_date:
-        daily_expenses[current_date.strftime('%Y-%m-%d')] = 0.0
-        current_date += timedelta(days=1)
-
-
-    for expense in expenses:
-        expense_date = datetime.strptime(expense['date'], '%Y-%m-%d').date()
-        if start_date <= expense_date <= end_date:
-            if category_filter == 'All Categories' or expense['category'] == category_filter:
-                daily_expenses[expense['date']] += expense['amount']
-                filtered_expenses_list.append(expense)
-
-    # Sort daily expenses by date
-    sorted_daily_expenses = dict(sorted(daily_expenses.items()))
-
-    # Sort filtered expenses list by date for display in table
-    filtered_expenses_list.sort(key=lambda x: x['date'])
-
-    return sorted_daily_expenses, filtered_expenses_list
 
 # Routes
 @app.route('/')
@@ -630,17 +586,6 @@ def delete(expense_id):
     return redirect(url_for('view'))
 
 
-
-# @app.route('/analysis')
-# @login_required
-# def analysis():
-#     analysis_data = get_analysis_data()
-#     # Fetch all unique categories, including an "All Categories" option
-#     categories = ['All Categories'] + get_all_categories()
-#     sorted_category_totals = dict(sorted(category_totals.items(), key=lambda x: x[1], reverse=True))
-#     return render_template('index.html', active_tab='analysis', analysis=analysis_data,
-#                            current_user=session['username'], categories=categories)
-
 @app.route('/analysis')
 @login_required
 def analysis():
@@ -657,13 +602,6 @@ def analysis():
                            current_user=session['username'], categories=categories,sorted_category_totals=sorted_category_totals)
 
 
-
-@app.route('/api/analysis')
-@login_required
-def api_analysis():
-    """API endpoint for analysis data"""
-    return jsonify(get_analysis_data())
-
 @app.route('/api/trend_analysis')
 @login_required
 def api_trend_analysis():
@@ -678,24 +616,6 @@ def api_trend_analysis():
     trend_data = get_trend_analysis_data(start_date, end_date, category)
     return jsonify(trend_data)
 
-# @app.route('/api/trend_analysis')
-# @login_required
-# def api_trend_analysis():
-#     start_date_str = request.args.get('start_date')
-#     end_date_str = request.args.get('end_date')
-#     category_filter = request.args.get('category')
-#
-#     daily_expenses, filtered_expenses_list = get_trend_data(start_date_str, end_date_str, category_filter)
-#
-#     # Format the data for Chart.js
-#     labels = list(daily_expenses.keys())
-#     data = list(daily_expenses.values())
-#
-#     return jsonify({
-#         'labels': labels,
-#         'data': data,
-#         'filtered_expenses': filtered_expenses_list # For the table below the chart
-#     })
 
 
 if __name__ == '__main__':
